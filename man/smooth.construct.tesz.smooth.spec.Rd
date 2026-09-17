@@ -46,10 +46,11 @@ passed to \code{\link[mgcv:te]{mgcv::te()}} in the order of the continuous covar
 are those of \code{te()} (cubic regression spline margins with dimension 5).
 Specify marginal \code{k} and \code{m} inside \code{xt}, not in the outer \code{s()} call.
 
-With \code{xt$shared = TRUE} (the default), there is one smoothing parameter per
-continuous direction, shared across factor levels. With
-\code{xt$shared = FALSE}, there is one per factor level and direction. The latter
-penalizes the original level-specific surfaces, not the contrast surfaces.
+By default (\code{xt$shared = FALSE}), there is one smoothing parameter per
+factor level and continuous direction. This follows the level-specific
+default of mgcv's \code{sz} basis. These penalties apply to the original
+level-specific surfaces, not the contrast surfaces. Set \code{xt$shared = TRUE}
+for one smoothing parameter per continuous direction, shared across levels.
 
 An orthonormal contrast basis absorbs the coefficient sum-to-zero constraint.
 At every covariate combination, the deviations sum to zero across factor
