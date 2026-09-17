@@ -41,10 +41,11 @@
 #' are those of `te()` (cubic regression spline margins with dimension 5).
 #' Specify marginal `k` and `m` inside `xt`, not in the outer `s()` call.
 #'
-#' With `xt$shared = TRUE` (the default), there is one smoothing parameter per
-#' continuous direction, shared across factor levels. With
-#' `xt$shared = FALSE`, there is one per factor level and direction. The latter
-#' penalizes the original level-specific surfaces, not the contrast surfaces.
+#' By default (`xt$shared = FALSE`), there is one smoothing parameter per
+#' factor level and continuous direction. This follows the level-specific
+#' default of mgcv's `sz` basis. These penalties apply to the original
+#' level-specific surfaces, not the contrast surfaces. Set `xt$shared = TRUE`
+#' for one smoothing parameter per continuous direction, shared across levels.
 #'
 #' An orthonormal contrast basis absorbs the coefficient sum-to-zero constraint.
 #' At every covariate combination, the deviations sum to zero across factor
@@ -120,8 +121,9 @@ smooth.construct.tesz.smooth.spec <- function(object, data, knots) {
   if (length(setdiff(names(opt), allowed))) {
     stop("Unknown xt option")
   }
+  # Match sz's default: estimate smoothness separately for each factor level.
   shared <- if (is.null(opt$shared)) {
-    TRUE
+    FALSE
   } else {
     opt$shared
   }
