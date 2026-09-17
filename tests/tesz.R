@@ -8,8 +8,12 @@ d <- data.frame(
 d$y <- sin(6 * d$x) + cos(4 * d$z) +
   (as.integer(d$f) - 2) * (1 + sin(5 * d$x) * cos(3 * d$z)) +
   rnorm(600, sd = 0.3)
-a <- gam(y ~ te(x, z, k = c(5, 5)) +
-  s(x, z, f, bs = "tesz", xt = list(k = c(5, 5))), data = d, method = "REML")
+# The explicit contrast model below uses shared smoothing parameters.
+a <- gam(
+  y ~ te(x, z, k = c(5, 5)) +
+    s(x, z, f, bs = "tesz", xt = list(k = c(5, 5), shared = TRUE)),
+  data = d, method = "REML"
+)
 stopifnot(a$rank == length(coef(a)), length(a$sp) == 4)
 s <- a$smooth[[2]]
 H <- s$contrasts
@@ -29,9 +33,10 @@ sumerr <- max(abs(rowSums(matrix(dev, ncol = 3))))
 stopifnot(sumerr < 1e-10)
 raw <- smoothCon(s(x, z, f, bs = "tesz", xt = list(k = c(5, 5))), d)[[1]]
 stopifnot(max(abs(Predict.matrix(raw, d) - raw$X)) < 1e-12)
+# The default has two directional penalties per level, plus two for te().
 c <- gam(
   y ~ te(x, z, k = c(5, 5)) +
-    s(x, z, f, bs = "tesz", xt = list(k = c(5, 5), shared = FALSE)),
+    s(x, z, f, bs = "tesz", xt = list(k = c(5, 5))),
   data = d, method = "REML"
 )
 stopifnot(
@@ -42,6 +47,17 @@ r <- smoothCon(s(x, z, f, bs = "tesz", xt = list(k = c(5, 5), shared = FALSE)),
   d,
   scale.penalty = FALSE
 )[[1]]
+# Omitting shared, including when xt is absent, must equal shared = FALSE.
+for (spec in list(s(x, z, f, bs = "tesz"),
+                  s(x, z, f, bs = "tesz", xt = list(k = c(5, 5))))) {
+  default <- smoothCon(spec, d, scale.penalty = FALSE)[[1]]
+  stopifnot(
+    length(default$S) == 2L * nlevels(d$f),
+    identical(default$X, r$X), identical(default$S, r$S),
+    identical(default$rank, r$rank),
+    identical(default$null.space.dim, r$null.space.dim)
+  )
+}
 theta <- rnorm(ncol(r$X))
 p <- ncol(r$base$X)
 alpha <- matrix(theta, nrow = p) %*% t(r$contrasts)
@@ -58,7 +74,7 @@ e <- gam(
   data = d, method = "REML"
 )
 stopifnot(
-  e$rank == length(coef(e)), length(e$sp) == 6,
+  e$rank == length(coef(e)), length(e$sp) == 12,
   all(is.finite(predict(e, d[1:10, ], se.fit = TRUE)$se.fit))
 )
 cat(

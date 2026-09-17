@@ -125,6 +125,8 @@ three <- bam(
     ),
   data = dat, discrete = TRUE
 )
+# Three common-surface penalties plus three per factor level by default.
+stopifnot(length(three$sp) == 3L + 3L * nlevels(dat$f))
 new <- dat[seq(1, nrow(dat), length.out = 20), ]
 p1 <- predict(three, new, se.fit = TRUE)
 p2 <- predict(three, new, se.fit = TRUE, discrete = FALSE)
@@ -190,6 +192,8 @@ expect_error(bam(form,
 # having the same number of levels, and allow predictions on a single pair.
 dat$g <- factor(rep(c("G:1", "G|2", "G 3"), length.out = nrow(dat)))
 valid <- bam(form, data = dat, discrete = TRUE)
+# Each by level has two common-surface penalties and two per level of f.
+stopifnot(length(valid$sp) == nlevels(dat$g) * (2L + 2L * nlevels(dat$f)))
 one <- predict(valid, dat[1, ], se.fit = TRUE)
 stopifnot(all(is.finite(c(one$fit, one$se.fit))))
 
